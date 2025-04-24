@@ -28,7 +28,7 @@ chosen = random.sample(candidates, N_FILES)
 
 def file_url(path: pathlib.Path) -> str:
     rel = path.relative_to(ROOT_DIR)
-    enc = "/".join(urllib.parse.quote_plus(part) for part in rel.parts)
+    enc = "/".join(urllib.parse.quote(part) for part in rel.parts)
     return f"{BASE_URL}/{enc}"
 
 
