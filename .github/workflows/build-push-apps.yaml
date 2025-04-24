@@ -1,0 +1,87 @@
+name: build and push changed apps
+on:
+  push:
+    branches: ["main"]
+    paths: ["apps/**"] # only run if stuff in apps/ changes
+permissions: # need these to push to ghcr
+  contents: read
+  packages: write
+jobs:
+  prepare:
+    name: find changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.apps.outputs.apps }} # json list of changed app directory names
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need full history to compare changes accurately
+      # this action finds dirs under apps/ that changed compared to previous commit on main
+      - name: get changed app directories
+        id: changed-dirs
+        uses: tj-actions/changed-files@v44
+        with:
+          path: apps
+          dir_names: true # we want directory names
+          dir_names_max_depth: 1 # only top-level dirs inside apps/ (e.g., apps/nginx -> nginx)
+          files: apps/** # look for changes within the apps directory
+      # convert the space-separated list from changed-files into a json array for the matrix
+      - name: prepare matrix data
+        id: apps
+        run: |
+          apps_list='${{ steps.changed-dirs.outputs.all_changed_files }}'
+          # use jq to create a clean json array, handles empty list case too
+          apps_json=$(echo "$apps_list" | jq --compact-output --raw-input 'split(" ") | map(select(length > 0))')
+          echo "apps=${apps_json}" >> "$GITHUB_OUTPUT"
+          echo "changed apps for matrix: ${apps_json}"
+          # you can see the list in the summary tab of the action run
+          echo "### apps changed:" >> $GITHUB_STEP_SUMMARY
+          echo "$apps_list" | tr ' ' '\n' | sed '/^$/d' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+  build-and-push:
+    name: build ${{ matrix.app }}
+    needs: prepare
+    if: ${{ needs.prepare.outputs.apps != '[]' }} # IMPORTANT: only run if apps actually changed
+    runs-on: ubuntu-latest # or use platform-specific runners if needed later
+    strategy:
+      fail-fast: false # if one app fails, let others continue
+      matrix:
+        app: ${{ fromJson(needs.prepare.outputs.apps) }} # dynamically create jobs for each changed app
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: set up qemu for multi-arch builds (optional but good practice)
+        uses: docker/setup-qemu-action@v3
+      - name: set up docker buildx
+        uses: docker/setup-buildx-action@v3
+      - name: log in to github container registry (ghcr)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }} # gh actions runner identity
+          password: ${{ secrets.GITHUB_TOKEN }} # built-in secret, no need to create one
+      # this generates tags and labels based on git info
+      - name: docker meta for tags & labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.app }} # e.g., ghcr.io/your-user/your-repo/nginx
+          tags: |
+            type=sha,prefix= # tag with the git commit sha (short)
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }} # tag 'latest' only on main branch merges
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=${{ matrix.app }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+      # this does the actual build and push
+      - name: build and push docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/${{ matrix.app }} # build context is the app's subdir
+          platforms: linux/amd64,linux/arm64 # build for these platforms; adjust if needed
+          push: ${{ github.ref == 'refs/heads/main' }} # *only* push if the trigger was a merge/push to main
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha # use github actions cache for docker layers
+          cache-to: type=gha,mode=max # write to cache, mode=max for better multi-platform cache hits

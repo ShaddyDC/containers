@@ -1,0 +1,86 @@
+name: pr build check
+# trigger on pull requests opened/updated against main, only if apps/* changed
+on:
+  pull_request:
+    branches: ["main"]
+    paths: ["apps/**"]
+permissions:
+  contents: read # only need to read code for builds
+jobs:
+  prepare-pr:
+    name: find changed apps in pr
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.apps.outputs.apps }} # json list of changed app dirs in the pr
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      # this action compares files in the pr against the target branch (main)
+      - name: get changed app directories
+        id: changed-dirs
+        uses: tj-actions/changed-files@v44
+        with:
+          path: apps
+          dir_names: true # we want directory names
+          dir_names_max_depth: 1 # only top-level dirs inside apps/
+          files: apps/** # look for changes within the apps directory
+      - name: prepare matrix data
+        id: apps
+        run: |
+          apps_list='${{ steps.changed-dirs.outputs.all_changed_files }}'
+          apps_json=$(echo "$apps_list" | jq --compact-output --raw-input 'split(" ") | map(select(length > 0))')
+          echo "apps=${apps_json}" >> "$GITHUB_OUTPUT"
+          echo "changed apps for matrix: ${apps_json}"
+          echo "### apps changed in pr:" >> $GITHUB_STEP_SUMMARY
+          echo "$apps_list" | tr ' ' '\n' | sed '/^$/d' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+  build-check:
+    name: build check ${{ matrix.app }}
+    needs: prepare-pr
+    if: ${{ needs.prepare-pr.outputs.apps != '[]' }} # only run if apps actually changed in the pr
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # let all changed app builds run even if one fails
+      matrix:
+        app: ${{ fromJson(needs.prepare-pr.outputs.apps) }} # matrix for each changed app
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: set up qemu
+        uses: docker/setup-qemu-action@v3
+      - name: set up docker buildx
+        uses: docker/setup-buildx-action@v3
+      # generate metadata to check it works, but tags aren't used for pushing
+      - name: docker meta (for build process consistency)
+        # login isn't strictly needed since push=false, but uncomment if your
+        # base images are private in ghcr or another registry
+        # - name: log in to ghcr (optional, for private base images)
+        #   uses: docker/login-action@v3
+        #   with:
+        #     registry: ghcr.io
+        #     username: ${{ github.actor }}
+        #     password: ${{ secrets.GITHUB_TOKEN }}
+
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}
+          tags: |
+            type=ref,event=pr # e.g., pr-123, not useful for pulling, just for build process
+          labels: | # keep labels consistent with the push workflow
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=${{ matrix.app }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+      # build the image, test layers, populate cache, but DO NOT PUSH
+      - name: build docker image check
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/${{ matrix.app }}
+          platforms: linux/amd64,linux/arm64 # match platforms from the push workflow
+          push: false # <<< MOST IMPORTANT PART: DO NOT PUSH ON PRs
+          tags: ${{ steps.meta.outputs.tags }} # feed tags to build process
+          labels: ${{ steps.meta.outputs.labels }} # feed labels to build process
+          # use github actions cache - read from it AND write to it
+          # this means pr builds can speed up main builds, and vice versa
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
