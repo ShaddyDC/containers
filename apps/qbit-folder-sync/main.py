@@ -147,7 +147,7 @@ class QbitSync:
     def _get_torrent_properties(self, torrent_hash: str) -> Optional[Dict[str, Any]]:
         """fetch torrent properties."""
         try:
-            return self.client.get_torrent(torrent_hash=torrent_hash)
+            return self.client.get_torrent(torrent_hash)
         except Exception as e:
             logger.exception(
                 f"unexpected error getting properties for hash {torrent_hash}: {e}"
@@ -157,7 +157,7 @@ class QbitSync:
     def _get_torrent_files(self, torrent_hash: str) -> Optional[List[Dict[str, Any]]]:
         """fetch list of files for a torrent."""
         try:
-            return self.client.get_torrent_files(torrent_hash=torrent_hash)
+            return self.client.get_torrent_files(torrent_hash)
         except Exception as e:
             logger.exception(
                 f"unexpected error getting files for hash {torrent_hash}: {e}"
