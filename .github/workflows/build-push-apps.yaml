@@ -25,7 +25,7 @@ jobs:
           path: apps
           dir_names: true # we want directory names
           dir_names_max_depth: 1 # only top-level dirs inside apps/ (e.g., apps/nginx -> nginx)
-          files: apps/** # look for changes within the apps directory
+          files: "**"
       # convert the space-separated list from changed-files into a json array for the matrix
       - name: prepare matrix data
         id: apps

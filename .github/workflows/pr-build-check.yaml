@@ -2,6 +2,7 @@ name: pr build check
 # trigger on pull requests opened/updated against main, only if apps/* changed
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: ["main"]
     paths: ["apps/**"]
 permissions:
@@ -23,7 +24,7 @@ jobs:
           path: apps
           dir_names: true # we want directory names
           dir_names_max_depth: 1 # only top-level dirs inside apps/
-          files: apps/** # look for changes within the apps directory
+          files: "**"
       - name: prepare matrix data
         id: apps
         run: |
