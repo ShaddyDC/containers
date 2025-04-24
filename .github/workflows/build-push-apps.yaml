@@ -14,13 +14,13 @@ jobs:
       apps: ${{ steps.apps.outputs.apps }} # json list of changed app directory names
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0 # need full history to compare changes accurately
       # this action finds dirs under apps/ that changed compared to previous commit on main
       - name: get changed app directories
         id: changed-dirs
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@2d756ea4c53f7f6b397767d8723b3a10a9f35bf2 # v44
         with:
           path: apps
           dir_names: true # we want directory names
@@ -49,13 +49,13 @@ jobs:
         app: ${{ fromJson(needs.prepare.outputs.apps) }} # dynamically create jobs for each changed app
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: set up qemu for multi-arch builds (optional but good practice)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3
       - name: set up docker buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3
       - name: log in to github container registry (ghcr)
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }} # gh actions runner identity
@@ -63,7 +63,7 @@ jobs:
       # this generates tags and labels based on git info
       - name: docker meta for tags & labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.app }} # e.g., ghcr.io/your-user/your-repo/nginx
           tags: |
@@ -76,7 +76,7 @@ jobs:
             org.opencontainers.image.vendor=${{ github.repository_owner }}
       # this does the actual build and push
       - name: build and push docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6
         with:
           context: ./apps/${{ matrix.app }} # build context is the app's subdir
           platforms: linux/amd64,linux/arm64 # build for these platforms; adjust if needed
