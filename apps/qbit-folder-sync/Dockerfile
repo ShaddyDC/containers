@@ -23,8 +23,7 @@ COPY --from=builder /app /app
 # Environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
   QBIT_URL="http://localhost:8080" \
-  QBIT_SAVE_PATH_PREFIX="/downloads" \
-  LOCAL_INPUT_DIR="/downloads" \
+  INPUT_DIR="/downloads" \
   OUTPUT_DIR="/output" \
   LOG_LEVEL="INFO" \
   LINK_MODE="hardlink" \

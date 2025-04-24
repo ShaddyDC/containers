@@ -27,8 +27,7 @@ docker run -e QBIT_URL=http://your-qbit-host:port \
 | `QBIT_URL` | `http://localhost:8080` | qbittorrent web ui url |
 | `QBIT_USER` | (none) | username for qbit webui (optional) |
 | `QBIT_PASS` | (none) | password for qbit webui (optional) |
-| `QBIT_SAVE_PATH_PREFIX` | `/downloads` | path prefix on qbit server |
-| `LOCAL_INPUT_DIR` | `/data/downloads` | local mount point for qbit files |
+| `INPUT_DIR` | `/data/downloads` | local mount point for qbit files |
 | `OUTPUT_DIR` | `/data/output` | output directory |
 | `DESIRED_TRACKERS` | (none) | comma-separated tracker urls/fragments to filter by |
 | `LINK_MODE` | `hardlink` | `hardlink` or `copy` |

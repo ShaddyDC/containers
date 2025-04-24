@@ -24,13 +24,12 @@ config = {
     "qbit_url": os.getenv("QBIT_URL", "http://localhost:8080"),
     "qbit_user": os.getenv("QBIT_USER"),
     "qbit_pass": os.getenv("QBIT_PASS"),
-    "qbit_save_path_prefix": Path(
-        os.getenv("QBIT_SAVE_PATH_PREFIX", "/downloads")
-    ),  # path prefix *on the qbittorrent server's filesystem*
-    "local_input_dir": Path(
-        os.getenv("LOCAL_INPUT_DIR", "/data/downloads")
-    ),  # where qbit_save_path_prefix is mounted *locally*
-    "output_dir": Path(os.getenv("OUTPUT_DIR", "/data/output")),
+    "input_dir": Path(
+        os.getenv("INPUT_DIR", "/data/downloads")
+    ),  # where completed torrents are stored
+    "output_dir": Path(
+        os.getenv("OUTPUT_DIR", "/data/output")
+    ),  # where to create links/copies
     "desired_trackers": set(
         filter(None, os.getenv("DESIRED_TRACKERS", "").split(","))
     ),  # comma-separated tracker urls (or parts)
@@ -101,8 +100,7 @@ class QbitSync:
     def __init__(self, client: Client, cfg: Dict[str, Any]):
         self.client = client
         self.cfg = cfg
-        self.qbit_save_path_prefix = cfg["qbit_save_path_prefix"]
-        self.local_input_dir = cfg["local_input_dir"]
+        self.input_dir = cfg["input_dir"]
         self.output_dir = cfg["output_dir"]
         self.desired_trackers = cfg["desired_trackers"]
         self.link_mode = cfg["link_mode"]
@@ -118,8 +116,7 @@ class QbitSync:
             sys.exit(1)
         logger.info("sync configuration:")
         logger.info(f"  - qbit url: {self.cfg['qbit_url']}")
-        logger.info(f"  - qbit save path prefix (server): {self.qbit_save_path_prefix}")
-        logger.info(f"  - local input dir (mount): {self.local_input_dir}")
+        logger.info(f"  - input dir: {self.input_dir}")
         logger.info(f"  - output dir: {self.output_dir}")
         logger.info(f"  - desired trackers: {self.desired_trackers or 'any'}")
         logger.info(f"  - link mode: {self.link_mode}")
@@ -166,32 +163,6 @@ class QbitSync:
         except Exception as e:
             logger.exception(
                 f"unexpected error getting files for hash {torrent_hash}: {e}"
-            )
-            return None
-
-    def _calculate_local_src_path(
-        self, properties: Dict[str, Any], file_info: Dict[str, Any]
-    ) -> Optional[Path]:
-        """calculate the local source path using configured path mapping."""
-        try:
-            server_file_path = Path(properties["save_path"]) / file_info["name"]
-            relative_path = server_file_path.relative_to(self.qbit_save_path_prefix)
-            local_src = self.local_input_dir / relative_path
-            return local_src
-        except ValueError as e:
-            logger.error(
-                f"path mapping error for file '{file_info['name']}' in torrent '{properties['name']}'. "
-                f"server path '{server_file_path}' may not be relative to prefix '{self.qbit_save_path_prefix}'. error: {e}"
-            )
-            return None
-        except KeyError as e:
-            logger.error(
-                f"missing expected key ('save_path' or 'name') for torrent/file. data: {properties}, {file_info}. error: {e}"
-            )
-            return None
-        except Exception as e:
-            logger.exception(
-                f"unexpected error calculating local source path for '{file_info.get('name', 'unknown file')}': {e}"
             )
             return None
 
@@ -268,16 +239,9 @@ class QbitSync:
                 fail_count += 1
                 continue
 
-            src_path = self._calculate_local_src_path(properties, f)
-            if not src_path:
-                logger.error(
-                    f"could not determine local source path for file '{file_name}' in torrent '{torrent_name}'. skipping file."
-                )
-                fail_count += 1
-                continue
-
-            relative_file_path = Path(file_name)
-            dst_path = torrent_out_dir / relative_file_path
+            # Build source and destination paths
+            src_path = self.input_dir / file_name
+            dst_path = torrent_out_dir / file_name
 
             if self._link_or_copy_file(src_path, dst_path):
                 success_count += 1
@@ -322,13 +286,6 @@ class QbitSync:
 
 def main():
     logger.info("qbit-sync starting up for a single run...")
-
-    if config["qbit_save_path_prefix"] == config["local_input_dir"]:
-        logger.warning(
-            f"qbit_save_path_prefix ({config['qbit_save_path_prefix']}) and "
-            f"local_input_dir ({config['local_input_dir']}) are identical. "
-            "this might be okay, but often indicates misconfiguration."
-        )
 
     exit_code = 0
     qbit_client = connect_client()
