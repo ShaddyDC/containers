@@ -127,9 +127,7 @@ class QbitSync:
             return True  # sync all if no specific trackers are desired
 
         try:
-            trackers = self.client.get_torrent_trackers(
-                torrent_hash=torrent_info["hash"]
-            )
+            trackers = self.client.get_torrent_trackers(torrent_info["hash"])
             for tracker in trackers:
                 if any(dt in tracker["url"] for dt in self.desired_trackers):
                     logger.debug(
