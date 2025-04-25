@@ -20,16 +20,22 @@ PATTERN = os.getenv("PATTERN", "")  # regex pattern to match against full path
 if not WEBHOOK:
     sys.exit("lol no webhook")
 
+print(f"scanning {ROOT_DIR}", file=sys.stderr)
+
 # gather all regular (non-hidden) files
 candidates = [
     p for p in ROOT_DIR.rglob("*") if p.is_file() and not p.name.startswith(".")
 ]
+print(f"found {len(candidates)} files", file=sys.stderr)
 
 # apply regex pattern filter if specified
 if PATTERN:
     try:
         pattern = re.compile(PATTERN, re.IGNORECASE)
+        print(f"filtering with pattern: {PATTERN}", file=sys.stderr)
+        pre_count = len(candidates)
         candidates = [p for p in candidates if pattern.search(str(p))]
+        print(f"kept {len(candidates)}/{pre_count} files after filter", file=sys.stderr)
     except re.error as e:
         sys.exit(f"invalid regex pattern: {e}")
 
@@ -60,5 +66,8 @@ lines = [
 ]
 
 payload = {"content": "\n".join(lines)}
-requests.post(WEBHOOK, json=payload, timeout=15).raise_for_status()
-print("sent ok", file=sys.stderr)
+print(payload)
+print(f"posting {len(chosen)} files to webhook", file=sys.stderr)
+resp = requests.post(WEBHOOK, json=payload, timeout=15)
+resp.raise_for_status()
+print(f"sent ok - webhook responded {resp.status_code}", file=sys.stderr)
