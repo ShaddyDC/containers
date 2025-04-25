@@ -6,12 +6,16 @@ import pathlib
 import urllib.parse
 import requests
 import sys
+import re
 
 ROOT_DIR = pathlib.Path(os.getenv("ROOT_DIR", "/data/books")).resolve()
 BASE_URL = os.getenv("BASE_URL", "https://example.com").rstrip("/")
 WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 N_FILES = int(os.getenv("N_FILES", "5"))
 SEARCH = os.getenv("SEARCH_ENGINE", "kagi")  # "kagi" or "google"
+
+# Filter option
+PATTERN = os.getenv("PATTERN", "")  # regex pattern to match against full path
 
 if not WEBHOOK:
     sys.exit("lol no webhook")
@@ -20,8 +24,17 @@ if not WEBHOOK:
 candidates = [
     p for p in ROOT_DIR.rglob("*") if p.is_file() and not p.name.startswith(".")
 ]
+
+# apply regex pattern filter if specified
+if PATTERN:
+    try:
+        pattern = re.compile(PATTERN, re.IGNORECASE)
+        candidates = [p for p in candidates if pattern.search(str(p))]
+    except re.error as e:
+        sys.exit(f"invalid regex pattern: {e}")
+
 if len(candidates) < N_FILES:
-    sys.exit(f"be real: only {len(candidates)} files")
+    sys.exit(f"be real: only {len(candidates)} files after filtering")
 
 chosen = random.sample(candidates, N_FILES)
 
