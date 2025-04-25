@@ -10,11 +10,17 @@
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin"];
       perSystem = {pkgs, ...}: {
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            uv
-          ];
-        };
+        devShells.default = let
+          myPy = pkgs.python313.withPackages (ps: with ps; [google-generativeai requests]);
+        in
+          pkgs.mkShell {
+            packages = with pkgs; [
+              uv
+              myPy 
+            ];
+            UV_PYTHON_PREFERENCE = "only-system";
+            UV_PYTHON = "${myPy }";
+          };
       };
     };
 }

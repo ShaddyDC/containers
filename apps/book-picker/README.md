@@ -17,28 +17,30 @@ environment variables:
 - `BASE_URL`: base url for file access links (default: `https://example.com`)
 - `DISCORD_WEBHOOK`: required webhook url for posting
 - `N_FILES`: number of files to select (default: `5`)
-- `SEARCH_ENGINE`: search provider to use - "kagi" or "google" (default: `kagi`)
 - `PATTERN`: regex pattern to match against full file paths
+- `GEMINI_API_KEY`: google gemini api key for generating reviews
 
 ## usage
 
 run in container or locally with proper environment variables set.
 
 ```
-docker run -e DISCORD_WEBHOOK=https://... -v /your/files:/data/books book-picker
+# basic usage
+docker run -e DISCORD_WEBHOOK=https://... -e GEMINI_API_KEY=your_key -v /your/files:/data/books book-picker
 ```
 
 with filtering:
 
 ```
 # only select pdf files
-docker run -e DISCORD_WEBHOOK=https://... -e PATTERN="\.pdf$" -v /your/files:/data/books book-picker
+docker run -e DISCORD_WEBHOOK=https://... -e GEMINI_API_KEY=your_key -e PATTERN="\.pdf$" -v /your/files:/data/books book-picker
 
 # only select files from "fiction" directories
-docker run -e DISCORD_WEBHOOK=https://... -e PATTERN="fiction" -v /your/files:/data/books book-picker
+docker run -e DISCORD_WEBHOOK=https://... -e GEMINI_API_KEY=your_key -e PATTERN="fiction" -v /your/files:/data/books book-picker
 
 # select sci-fi or fantasy books
-docker run -e DISCORD_WEBHOOK=https://... -e PATTERN="sci-fi|fantasy" -v /your/files:/data/books book-picker
+docker run -e DISCORD_WEBHOOK=https://... -e GEMINI_API_KEY=your_key -e PATTERN="sci-fi|fantasy" -v /your/files:/data/books book-picker
 ```
 
-outputs formatted discord message with random file selections and search links.
+outputs formatted discord message with random file selections, direct links, and ai-generated reviews that follow an "eigenrobot" persona - slightly detached, critical, and written in lowercase with zoomer slang.
+
