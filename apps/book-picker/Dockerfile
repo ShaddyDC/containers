@@ -16,6 +16,10 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-dev
 
+RUN echo "Running tests..." && \
+    .venv/bin/python -m unittest /app/test_selector.py && \
+    echo "Tests passed."
+
 FROM base
 
 COPY --from=builder /app /app
@@ -25,8 +29,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
   ROOT_DIR="/data/books" \
   BASE_URL="https://example.com" \
   DISCORD_WEBHOOK="" \
-  N_FILES=5 \
-  SEARCH_ENGINE="kagi"
+  N_FILES=5
 
 CMD ["/app/.venv/bin/python", "/app/main.py"]
 
