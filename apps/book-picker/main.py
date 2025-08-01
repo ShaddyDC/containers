@@ -18,7 +18,7 @@ WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 N_FILES = int(os.getenv("N_FILES", "5"))
 PATTERN = os.getenv("PATTERN", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-pro-preview-03-25")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
 
 
 # --- Core Logic ---
