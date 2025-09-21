@@ -1,4 +1,4 @@
-FROM rust:1.89.0@sha256:57407b378b2b6e07b48a6135a20c87cc22ea6e249c0acf6cb1833ead3cf116e9 AS builder
+FROM rust:1.90.0@sha256:eabb786e74b520e7ea45baca03ea20c3e8c6dc037c392d457badf05d8e5818b5 AS builder
 
 # renovate: datasource=github-releases packageName=ankitects/anki versioning=loose
 ARG ANKI_VERSION=25.09.2
