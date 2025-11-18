@@ -2,10 +2,19 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>home-operations/renovate-config"],
   minimumReleaseAge: "3 days",
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 4am on monday"],
+  },
   packageRules: [
     {
       matchUpdateTypes: ["digest"],
       automerge: true,
+    },
+    {
+      matchManagers: ["pep621"],
+      matchUpdateTypes: ["lockFileMaintenance"],
+      automerge: false,
     },
   ],
   customManagers: [
