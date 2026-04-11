@@ -65,8 +65,9 @@ jobs:
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}
+          # tag e.g. pr-123, not useful for pulling — just feeds the build process
           tags: |
-            type=ref,event=pr # e.g., pr-123, not useful for pulling, just for build process
+            type=ref,event=pr
           labels: | # keep labels consistent with the push workflow
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
