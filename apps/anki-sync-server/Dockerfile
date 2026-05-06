@@ -11,7 +11,7 @@ RUN cargo install --git https://github.com/ankitects/anki.git \
   --locked \
   anki-sync-server
 
-FROM gcr.io/distroless/cc-debian12@sha256:0000f9dc0290f8eaf0ecceafbc35e803649087ea7879570fbc78372df7ac649b
+FROM gcr.io/distroless/cc-debian12@sha256:847433844c7e04bcf07a3a0f0f5a8de554c6df6fa9e3e3ab14d3f6b73d780235
 
 COPY --from=builder /anki-server/bin/anki-sync-server /usr/bin/anki-sync-server
 
