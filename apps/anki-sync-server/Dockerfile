@@ -1,7 +1,7 @@
 FROM rust:1.97.1@sha256:1bcff4befb740599103a2c7cb51058e14479b2e35e3a34a3f0dc4ede09927488 AS builder
 
 # renovate: datasource=github-releases packageName=ankitects/anki versioning=loose
-ARG ANKI_VERSION=26.05
+ARG ANKI_VERSION=26.08.1
 
 RUN apt-get update && apt-get install -y build-essential protobuf-compiler && apt-get clean && rm -rf /var/lib/apt/lists/*
 
