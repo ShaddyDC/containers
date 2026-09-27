@@ -3,6 +3,12 @@ on:
   push:
     branches: ["main"]
     paths: ["apps/**"] # only run if stuff in apps/ changes
+  workflow_dispatch: # manual rebuild
+    inputs:
+      apps:
+        description: "space-separated app names to build (empty = all apps)"
+        required: false
+        default: ""
 permissions: # need these to push to ghcr
   contents: read
   packages: write
@@ -20,6 +26,7 @@ jobs:
       # this action finds dirs under apps/ that changed compared to previous commit on main
       - name: get changed app directories
         id: changed-dirs
+        if: ${{ github.event_name == 'push' }}
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           path: apps
@@ -29,8 +36,23 @@ jobs:
       # convert the space-separated list from changed-files into a json array for the matrix
       - name: prepare matrix data
         id: apps
+        env:
+          CHANGED: ${{ steps.changed-dirs.outputs.all_changed_files }}
+          REQUESTED: ${{ inputs.apps }}
         run: |
-          apps_list='${{ steps.changed-dirs.outputs.all_changed_files }}'
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            # manual run: requested apps, or every dir under apps/
+            if [ -n "$REQUESTED" ]; then
+              for app in $REQUESTED; do
+                [ -d "apps/$app" ] || { echo "::error::unknown app: $app"; exit 1; }
+              done
+              apps_list="$REQUESTED"
+            else
+              apps_list=$(find apps -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | tr '\n' ' ')
+            fi
+          else
+            apps_list="$CHANGED"
+          fi
           # use jq to create a clean json array, handles empty list case too
           apps_json=$(echo "$apps_list" | jq --compact-output --raw-input 'split(" ") | map(select(length > 0))')
           echo "apps=${apps_json}" >> "$GITHUB_OUTPUT"
