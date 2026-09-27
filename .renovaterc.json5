@@ -1,6 +1,8 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>home-operations/renovate-config"],
+  // No Helm charts here; these post-upgrade tasks aren't allowed on hosted Renovate
+  ignorePresets: ["github>home-operations/renovate-config:helmPostUpgradeTasks.json5"],
   minimumReleaseAge: "3 days",
   lockFileMaintenance: {
     enabled: true,
