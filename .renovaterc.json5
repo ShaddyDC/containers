@@ -3,12 +3,20 @@
   extends: ["github>home-operations/renovate-config"],
   // No Helm charts here; these post-upgrade tasks aren't allowed on hosted Renovate
   ignorePresets: ["github>home-operations/renovate-config:helmPostUpgradeTasks.json5"],
-  minimumReleaseAge: "3 days",
+  minimumReleaseAge: "7 days",
   lockFileMaintenance: {
     enabled: true,
     schedule: ["before 4am on monday"],
   },
   packageRules: [
+    {
+      // Supply-chain cooldown. The home-operations preset sets 3 days for
+      // package registries in a packageRule, which beats the top-level
+      // setting, so it is restated here. Docker images outside Docker Hub
+      // carry no release timestamps and still update without waiting.
+      matchPackageNames: ["*"],
+      minimumReleaseAge: "7 days",
+    },
     {
       matchUpdateTypes: ["digest"],
       automerge: true,

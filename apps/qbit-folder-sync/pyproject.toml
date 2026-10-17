@@ -10,4 +10,6 @@ dependencies = ["python-qbittorrent>=0.4.3"]
 sync = "main:main"
 
 [tool.uv]
+# Supply-chain cooldown: resolve only releases at least a week old.
+exclude-newer = "7 days"
 package = true

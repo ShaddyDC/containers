@@ -8,3 +8,7 @@ dependencies = [
     "google-generativeai>=0.8.5",
     "requests>=2.32.3",
 ]
+
+[tool.uv]
+# Supply-chain cooldown: resolve only releases at least a week old.
+exclude-newer = "7 days"
