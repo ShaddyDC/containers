@@ -12,3 +12,6 @@ dependencies = [
 [tool.uv]
 # Supply-chain cooldown: resolve only releases at least a week old.
 exclude-newer = "7 days"
+# Except certifi: it is the trust store, and its fixes (like 2026.10.19, the compromised eMudhra
+# CAs) should not wait a week.
+exclude-newer-package = { certifi = false }

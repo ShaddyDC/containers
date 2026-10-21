@@ -3,7 +3,7 @@ FROM rust:1.98.1@sha256:a8a5f0a1e5fe7dfe1d352591e4a1c7dd2c08fd70475cae872cf3458b
 # renovate: datasource=github-releases depName=ankitects/anki versioning=loose
 ARG ANKI_VERSION=26.09.3
 
-RUN apt-get update && apt-get install -y build-essential protobuf-compiler && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y build-essential protobuf-compiler ca-certificates && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install --git https://github.com/ankitects/anki.git \
   --tag ${ANKI_VERSION} \
@@ -14,6 +14,9 @@ RUN cargo install --git https://github.com/ankitects/anki.git \
 FROM gcr.io/distroless/cc-debian12@sha256:e5d81ddde149641e2a9ba55be4545bc125c67de07508b03ba4c22e6eb0ded5aa
 
 COPY --from=builder /anki-server/bin/anki-sync-server /usr/bin/anki-sync-server
+# distroless still trusts the roots behind the compromised eMudhra CAs (2026-10-17); the
+# builder's ca-certificates is current
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 # Note that as a user of the container you should NOT overwrite these values
 # for safety and simplicity reasons

@@ -7,4 +7,7 @@ RUN xcaddy build \
 
 FROM caddy:latest
 
+# Until the base image ships ca-certificates 20261020 (the compromised eMudhra CAs, 2026-10-17)
+RUN apk upgrade --no-cache ca-certificates ca-certificates-bundle
+
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
