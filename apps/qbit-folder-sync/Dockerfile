@@ -6,7 +6,9 @@ RUN apk upgrade --no-cache ca-certificates ca-certificates-bundle
 FROM base AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest@sha256:d3b601f0c7b118bc1753febf7c41cc80981df678445e0254284eecf84db79a7d /uv /bin/uv
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+# uv must build the venv on the base image's Python: one it downloads itself is not copied to the
+# final stage. Keep .python-version in step with the base image tag.
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app
 
@@ -22,6 +24,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM base
 
 COPY --from=builder /app /app
+
+# Smoke test in the final stage: the venv's interpreter must exist here (it is a symlink to the
+# base image's Python) and the dependencies must import. Fails the build otherwise.
+RUN ["/app/.venv/bin/python", "-c", "import qbittorrent"]
 
 # Environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
